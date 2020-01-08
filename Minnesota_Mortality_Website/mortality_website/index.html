@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!--Openlayers stylesheet-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.0.1/css/ol.css" type="text/css">
+ 
+    <!--reference openlayers-->
+    <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.0.1/build/ol.js"></script>
+
+    <!-- My stlye sheet -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <title>Mortality Rate Disparities</title>
+  </head>
+
+
+  <body>
+    <header>
+        <h2>Mortality Rates in Minnesota by Age</h2>
+    </header>
+    
+   <!--to change style in a layer, change wms request from
+
+    SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=local%3Amort_age0_4_zcta_p50&CRS=EPSG%3A3857&STYLES=&FORMAT_OPTIONS=dpi%3A113&WIDTH=1860&HEIGHT=1125&BBOX=-11862153.57510313%2C5082532.199055379%2C-9288549.67561885%2C6639147.460840225
+
+    to
+
+  http://localhost:8080/geoserver/local/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=local%3Amort_age0_4_zcta_p50&CRS=EPSG%3A3857&STYLES=local:modified_raster_twocolorgradient&FORMAT_OPTIONS=dpi%3A113&WIDTH=1860&HEIGHT=1125&BBOX=-11862153.57510313%2C5082532.199055379%2C-9288549.67561885%2C6639147.460840225
+
+  where the thing that is changing is the style information in the url
+  
+  -->
+
+    <div id="description">
+      <p>These maps show age-adjusted, indirectly-standardized mortality rates for different age groups around the state of Minnesota, for the years 2011 - 2015.</p>
+      <p>A value near 1.0 indicates that the location has mortality rates that are close to the standard for the state. Lower values indicate a lower rate than normal, while higher values indicate a higher rate than normal.</p>
+    </div>
+
+    <!--The map itself-->
+    <div id="map" class="map"></div>
+
+  
+    <script type="text/javascript">
+      //basemap
+      var map = new ol.Map({
+        target: 'map',
+        layers: [
+          //add basemap
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
+          })
+        ],
+        view: new ol.View({
+          center: ol.proj.fromLonLat([-95, 46.5]),
+          zoom: 6.5
+        })
+      });
+
+      //geoserver layers
+      var age0_4 = new ol.layer.Image({
+          id: "age0_4",
+          source: new ol.source.ImageWMS({
+              url: 'http://localhost:8080/geoserver/local/wms',
+              params:{'LAYERS': 'local:mort_age0_4_zcta_p50',
+                //'STYLES': 'local:modified_raster_twocolorgradient'
+                },
+              serverType: 'geoserver'
+              
+          })
+      });
+
+      //age0_4.getSource().updateParams({
+      //  STYLES: 'local:modified_raster_twocolorgradient'
+      //});
+
+      var age0_19 = new ol.layer.Image({
+          id: "age0_19",
+          layerName: "age0_19",
+          source: new ol.source.ImageWMS({
+              url: 'http://localhost:8080/geoserver/local/wms',
+              params:{'LAYERS': 'local:mort_age0_19_zcta_p50'},
+              serverType: 'geoserver'
+          })
+      });
+
+      var age20_39 = new ol.layer.Image({
+          id: "age20_39",
+          layerName: "age20_39",
+          source: new ol.source.ImageWMS({
+              url: 'http://localhost:8080/geoserver/local/wms',
+              params:{'LAYERS': 'local:mort_age20_39_zcta_p100'},
+              serverType: 'geoserver'
+          })
+      });
+
+      var age40_64 = new ol.layer.Image({
+          id: "age40_64",
+          layerName: "age40_64",
+          source: new ol.source.ImageWMS({
+              url: 'http://localhost:8080/geoserver/local/wms',
+              params:{'LAYERS': 'local:mort_age40_64_zcta_p200'},
+              serverType: 'geoserver'
+          })
+      });
+
+      var age65_79 = new ol.layer.Image({
+          id: "age65_79",
+          layerName: "age65_79",
+          source: new ol.source.ImageWMS({
+              url: 'http://localhost:8080/geoserver/local/wms',
+              params:{'LAYERS': 'local:mort_age65_79_zcta_p400'},
+              serverType: 'geoserver'
+          })
+      });
+
+      var age65_above = new ol.layer.Image({
+          id: "age65_above",
+          layerName: "age65_above",
+          source: new ol.source.ImageWMS({
+              url: 'http://localhost:8080/geoserver/local/wms',
+              params:{'LAYERS': 'local:mort_age65_above_zcta_p400'},
+              serverType: 'geoserver'
+          })
+      });
+
+      var age_all = new ol.layer.Image({
+          id: "age_all",
+          layerName: "age_all",
+          source: new ol.source.ImageWMS({
+              url: 'http://localhost:8080/geoserver/local/wms',
+              params:{'LAYERS': 'local:mort_age_adj_all_ages_zcta_p500'},
+              serverType: 'geoserver'
+          })
+      });
+
+      // add all layers to map and set all to not visible except top layer
+      //each new layer is added on top of the previous ones
+      map.addLayer(age_all);
+      age_all.setVisible(false);
+
+      map.addLayer(age65_above);
+      age65_above.setVisible(false);
+
+      map.addLayer(age65_79);
+      age65_79.setVisible(false);
+
+      map.addLayer(age40_64);
+      age40_64.setVisible(false);
+
+      map.addLayer(age20_39);
+      age20_39.setVisible(false);
+
+      map.addLayer(age0_19);
+      age0_19.setVisible(false);
+
+      map.addLayer(age0_4);
+
+      function changeVisible(layerName, layerCount){
+        var selectorPhrase = "[layerName=" + layerName + "]"
+        var checkbox = document.querySelector(selectorPhrase)
+        if (checkbox.checked == true){
+          layerVisible(layerCount, true);
+        }
+        else{
+          layerVisible(layerCount, false);
+        }
+      }
+      
+      //make a layer visible or invisible
+      function layerVisible(layerCount, layerState){
+        var count = 0;
+        map.getLayers().forEach(function(el){ 
+          if (count == layerCount){
+            el.setVisible(layerState); //layerState should be true or false
+          }
+          count++;
+        })
+      }
+
+
+
+    </script>
+
+  <div id="toggleBar">
+    <div id="layerToggle">
+      <h4>Layers</h4>
+      <!--change input type to radio buttons-->
+      <input type="checkbox" style="margin-left:20px" class="checkbox" layerName ="age0_4" onclick = "changeVisible('age0_4', 7)" checked>Ages 0 - 4
+      <br>
+      <input type="checkbox" style="margin-left:20px" class="checkbox" layerName = "age0_19" onclick = "changeVisible('age0_19', 6)">Ages 0 - 19
+      <br>
+      <input type="checkbox" style="margin-left:20px" class="checkbox" layerName = "age20_39" onclick = "changeVisible('age20_39', 5)">Ages 20 - 39
+      <br>
+      <input type="checkbox" style="margin-left:20px" class="checkbox" layerName = "age40_65" onclick = "changeVisible('age40_65', 4)">Ages 40 - 64
+      <br>
+      <input type="checkbox" style="margin-left:20px" class="checkbox" layerName = "age65_79" onclick = "changeVisible('age65_79', 3)">Ages 65 - 79
+      <br>
+      <input type="checkbox" style="margin-left:20px" class="checkbox" layerName = "age65_above" onclick = "changeVisible('age65_above', 2)">Ages 65 and Above
+      <br>
+      <input type="checkbox" style="margin-left:20px" class="checkbox" layerName = "age_all" onclick = "changeVisible('age_all', 1)">All Ages
+      <br>
+    </div>
+  
+
+    <div id="legend">
+      <h4>Legend</h4>
+      <!--URL for getting a legend from geoserver, though it doesn't give values that go with the colors: http://localhost:8080/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=local:mort_age0_4_zcta_p50 -->
+
+      <div class="box" style="background:#4575b4"></div> <span>0 - 0.2</span>
+      <br>
+      <div class="box" style="background:#74add1"></div> <span>0.2 - 0.4</span>
+      <br>
+      <div class="box" style="background:#abd9e9"></div> <span>0.4 - 0.6</span>
+      <br>
+      <div class="box" style="background:#e0f3f6"></div> <span>0.6 - 0.8</span>
+      <br>
+      <div class="box" style="background:#eeeeee"></div> <span>0.8 - 1.2</span>
+      <br>
+      <div class="box" style="background:#ffffbf"></div> <span>1.2 - 1.4</span>
+      <br>
+      <div class="box" style="background:#fee090"></div> <span>1.4 - 1.6</span>
+      <br>
+      <div class="box" style="background:#fdae61"></div> <span>1.6 - 1.8</span>
+      <br>
+      <div class="box" style="background:#f46d43"></div> <span>1.8 - 2.0</span>
+      <br>
+      <div class="box" style="background:#d73027"></div> <span>> 2.0</span>
+    </div>
+
+    </div><!-- End of toggleBar div-->
+
+    <footer>
+      <p>By Megan Luick</p>
+    </footer>
+
+  </body>
+</html>
